@@ -8,7 +8,10 @@
 
 #include "version.h"
 
+#define EnableCollector false
+
 void DetectorInit();
+void CollectorInit();
 
 Logger logger(PLUGIN_NAME);
 
@@ -59,5 +62,7 @@ extern "C"
         std::ios::sync_with_stdio(false);
         CheckProtocolVersion();
         DetectorInit();
+        if(EnableCollector)
+            CollectorInit();
     }
 }
