@@ -8,7 +8,7 @@
 
 #include "version.h"
 
-void PluginInit();
+void DetectorInit();
 
 Logger logger(PLUGIN_NAME);
 
@@ -58,6 +58,6 @@ extern "C"
     {
         std::ios::sync_with_stdio(false);
         CheckProtocolVersion();
-        PluginInit();
+        DetectorInit();
     }
 }

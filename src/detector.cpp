@@ -8,17 +8,12 @@
 #include <Nlohmann/json.hpp>
 
 #include <cmath>
-#include <iostream>
-#include <fstream>
 
 using json = nlohmann::json;
 json playerAngleData = json::object();
 json checkCount = json::object();
 
 extern Logger logger;
-
-//std::ofstream out("angle.txt");
-
 int CheckDataInterval = 20;
 
 double targetAbnormalAnglePercentage = 0.2;
@@ -47,8 +42,9 @@ void CheckPlayerData(Player* player)
     checkCount[player->getUuid()] = 0;
 }
 
-void PluginInit()
+void DetectorInit()
 {
+
     Event::PlayerAttackEvent::subscribe([](const Event::PlayerAttackEvent& ev) {
         if (playerAngleData.find(ev.mPlayer->getUuid()) == playerAngleData.end())
         {
@@ -89,16 +85,8 @@ void PluginInit()
 				}, 1);
         }
 
-        /*if (out.is_open())
-        {
-            out << std::to_string(angle) + "\n";
-        }*/
 
         return true;
         });
-    Event::ServerStoppedEvent::subscribe([](const Event::ServerStoppedEvent& ev) {
-        //out.close();
-		return true;
-		});
 
 }
