@@ -9,12 +9,14 @@
 
 #include <cmath>
 
+#include <DNN.h>
+
 using json = nlohmann::json;
 json playerAngleData = json::object();
 json checkCount = json::object();
 
 extern Logger logger;
-int CheckDataInterval = 20;
+int CheckDataInterval = 10;
 
 double targetAbnormalAnglePercentage = 0.2;
 double targetAngle = 1.0;
@@ -22,14 +24,26 @@ double targetAngle = 1.0;
 void CheckPlayerData(Player* player)
 {
     int abnormalAngleCount = 0;
-    int targetAbnormalAngleCount = CheckDataInterval * targetAbnormalAnglePercentage;
-    for (int i = 0; i < CheckDataInterval; ++i)
+
+    std::vector<std::vector<double>> playerData = { {}, {} };
+
+    for (json data : playerAngleData[player->getUuid()])
     {
-        if(playerAngleData[player->getUuid()][i] > targetAngle)
-            ++abnormalAngleCount;
+        playerData[0].push_back(data["distance"]);
+        playerData[1].push_back(data["angle"]);
 	}
-    // 如果average在[targetAverage - averageTolerance, targetAverage + averageTolerance]间
-    // 并且standardDeviation在[targetStandardDeviation - standardDeviationTolerance, targetStandardDeviation + standardDeviationTolerance]间
+
+    std::vector<double> results = DNN(playerData);
+
+    for (double result : results)
+    {
+        //logger.info(std::to_string(result));
+		if (result > 0.5)
+			++abnormalAngleCount;
+    }
+
+    int targetAbnormalAngleCount = CheckDataInterval * targetAbnormalAnglePercentage;
+
     if (abnormalAngleCount > targetAbnormalAngleCount) {
 		logger.error(player->getName() + " may using Kill Aura!");
         logger.info("abnormalAngleCount: " + std::to_string(abnormalAngleCount));
@@ -44,7 +58,7 @@ void CheckPlayerData(Player* player)
 
 void DetectorInit()
 {
-
+    logger.info("插件已加载！");
     Event::PlayerAttackEvent::subscribe([](const Event::PlayerAttackEvent& ev) {
         if (playerAngleData.find(ev.mPlayer->getUuid()) == playerAngleData.end())
         {
@@ -77,7 +91,13 @@ void DetectorInit()
         // 计算玩家朝向向量和玩家实体向量之间的夹角
         double angle = Vec3::angle(playerLookDir, playerEntityDir);
 
-        playerAngleData[ev.mPlayer->getUuid()].push_back(angle);
+        json playerData = json::object();
+        playerData["distance"] = playerEntityDir.length();
+        playerData["angle"] = angle;
+
+        //logger.info(std::to_string(playerEntityDir.length()) + " " + std::to_string(angle));
+
+        playerAngleData[ev.mPlayer->getUuid()].push_back(playerData);
 
         if (checkCount[ev.mPlayer->getUuid()] >= CheckDataInterval) {
             Schedule::delay([player = ev.mPlayer]() {
